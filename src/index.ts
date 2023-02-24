@@ -8,11 +8,12 @@ import cookieParser from 'cookie-parser';
 import hpp from 'hpp';
 import AppError from './utilities/AppError';
 import errorController from './controllers/errorController';
-import mongoSanitize from 'express-mongo-sanitize'
+import mongoSanitize from 'express-mongo-sanitize';
+import userRouter from './routes/userRouter';
 const app = express();
 
+app.use(cookieParser());
 app.enable('trust proxy');
-
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -85,9 +86,9 @@ app.use((req, res, next) => {
 // app.use('/api/v1/reviews', reviewRouter);
 // app.use('/api/v1/bookings', bookingRouter);
 
-app.get('/', (req, res) => {
-    res.status(200).json({message: 'some message'})
-})
+
+
+app.use('/api/v1/users', userRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
