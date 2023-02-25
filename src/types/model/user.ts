@@ -10,11 +10,12 @@ export interface User extends Document {
 	password?: string;
 	passwordConfirm?: string;
 	passwordChangedAt: Date;
-	passwordResetToken: string;
-	passwordResetExpires: Date;
+	passwordResetToken?: string;
+	passwordResetExpires?: Date;
 	active: boolean;
     isNew: boolean;
 	correctPassword: (incomingPassword: string, password: string) => Promise<boolean>;
 	changedPasswordAfter: (JWTTimestamp: number) => boolean;
+	createPasswordResetToken: () => string;
 }
 

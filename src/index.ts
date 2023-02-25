@@ -15,7 +15,7 @@ const app = express();
 app.use(cookieParser());
 app.enable('trust proxy');
 app.set('view engine', 'pug');
-app.set('views', path.join(__dirname, 'views'));
+app.set('email-templates', path.join(__dirname, 'email-templates'));
 
 // 1) GLOBAL MIDDLEWARES
 // // Implement CORS
