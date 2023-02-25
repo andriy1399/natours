@@ -13,6 +13,8 @@ export interface User extends Document {
 	passwordResetToken: string;
 	passwordResetExpires: Date;
 	active: boolean;
-    isNew: boolean
+    isNew: boolean;
+	correctPassword: (incomingPassword: string, password: string) => Promise<boolean>;
+	changedPasswordAfter: (JWTTimestamp: number) => boolean;
 }
 
