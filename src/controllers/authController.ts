@@ -19,12 +19,12 @@ const createSendToken = (user: User, statusCode: number, req: Request, res: Resp
 		secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
 	});
 
-  res.cookie('refreshToken', refreshToken, {
-    expires: new Date(Date.now() + process.env.REFRESH_TOKEN_EXPIRES_IN * 24 * 60 * 60 * 1000),
-    httpOnly: true,
-    secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
-  });
-	// Remove password from output
+	res.cookie('refreshToken', refreshToken, {
+		expires: new Date(Date.now() + process.env.REFRESH_TOKEN_EXPIRES_IN * 24 * 60 * 60 * 1000),
+		httpOnly: true,
+		secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
+	});
+
 	delete user.password;
 
 	res.status(statusCode).json({
@@ -74,7 +74,6 @@ export const logout = catchAsync(async (req, res, next) => {
 });
 
 export const protect = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
-	// 1) Getting token and check if it's there
 	let token: string | undefined;
 	if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
 		token = req.headers.authorization.split(' ')[1];
@@ -86,23 +85,18 @@ export const protect = catchAsync(async (req: AuthRequest, res: Response, next: 
 		return next(new AppError('You are not logged in! Please log in to get access.', 401));
 	}
 
-	// 2) Verify token
-
 	const jwtData = jwt.verify(token, process.env.JWT_SECRET!, { complete: true });
 	const decoded = jwtData.payload as DecodedToken;
 
-	// 3) Check if user still exists
 	const currentUser = await User.findById(decoded.id);
 	if (!currentUser) {
 		return next(new AppError('The user belonging to this token does not exist.', 401));
 	}
 
-	// 4) Check if user changed password after the token was issued
 	if (currentUser.changedPasswordAfter(decoded.iat)) {
 		return next(new AppError('User recently changed password! Please log in again.', 401));
 	}
 
-	// GRANT ACCESS TO PROTECTED ROUTE
 	req.user = currentUser;
 	next();
 });
@@ -126,11 +120,9 @@ export const forgotPassword: RequestHandler = catchAsync(async (req, res, next) 
 		return next(new AppError('There is no user with email address.', 404));
 	}
 
-	// 2) Generate the random reset token
 	const resetToken = user.createPasswordResetToken();
 	await user.save({ validateBeforeSave: false });
 
-	// 3) Send it to user's email
 	try {
 		const resetURL = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetToken}`;
 		await new Email(user, resetURL).sendPasswordReset();
@@ -149,7 +141,6 @@ export const forgotPassword: RequestHandler = catchAsync(async (req, res, next) 
 });
 
 export const resetPassword = catchAsync(async (req, res, next) => {
-	
 	const hashedToken = CryptoJS.SHA256(req.params.token).toString();
 
 	const user = await User.findOne({
@@ -157,7 +148,6 @@ export const resetPassword = catchAsync(async (req, res, next) => {
 		passwordResetExpires: { $gt: Date.now() },
 	});
 
-	
 	if (!user) {
 		return next(new AppError('Token is invalid or has expired', 400));
 	}
@@ -176,7 +166,7 @@ export const refreshAccessToken = catchAsync(async (req: Request, res: Response,
 		return next(new AppError('Refresh token is missing.', 400));
 	}
 
-	const user = await User.findOne(refreshToken ? { refreshToken } : {refreshToken: req.cookies.refreshToken});
+	const user = await User.findOne(refreshToken ? { refreshToken } : { refreshToken: req.cookies.refreshToken });
 
 	if (!user) {
 		return next(new AppError('Invalid refresh token.', 401));
@@ -190,18 +180,16 @@ export const refreshAccessToken = catchAsync(async (req: Request, res: Response,
 	});
 });
 
-
 export const updatePassword = catchAsync(async (req: AuthRequest, res, next) => {
 	const user = await User.findById(req.user?.id).select('+password');
 	if (!user) {
 		return next(new AppError('User not found.', 404));
 	}
 	if (!(await user.correctPassword(req.body.passwordCurrent, user.password || ''))) {
-	  return next(new AppError('Your current password is wrong.', 401));
+		return next(new AppError('Your current password is wrong.', 401));
 	}
 	user.password = req.body.password;
 	user.passwordConfirm = req.body.passwordConfirm;
 	await user.save();
 	createSendToken(user, 200, req, res);
-  });
-  
+});
