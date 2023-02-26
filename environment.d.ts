@@ -21,6 +21,7 @@ declare global {
             STRIPE_SECRET_KEY: string;
             STRIPE_PUBLIC_KEY: string;
 			NODE_ENV: 'development' | 'production';
+            REFRESH_TOKEN_EXPIRES_IN: number;
 		}
 	}
 }

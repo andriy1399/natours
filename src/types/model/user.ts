@@ -14,6 +14,7 @@ export interface User extends Document {
 	passwordResetExpires?: Date;
 	active: boolean;
     isNew: boolean;
+	refreshToken?: string;
 	correctPassword: (incomingPassword: string, password: string) => Promise<boolean>;
 	changedPasswordAfter: (JWTTimestamp: number) => boolean;
 	createPasswordResetToken: () => string;

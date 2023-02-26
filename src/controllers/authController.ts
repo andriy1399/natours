@@ -5,30 +5,25 @@ import { catchAsync } from '../utilities/catchAsync';
 import { Response, Request, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import Email from '../utilities/Email';
+import CryptoJS from 'crypto-js';
+import { generateRefreshToken, signToken } from '../utilities/auth';
+import { AuthRequest, DecodedToken } from '../types/auth';
 
-interface AuthRequest extends Request {
-	user?: User;
-}
-
-interface DecodedToken {
-	id: string;
-	iat: number;
-	exp: number;
-}
-const signToken = (id: string): string => {
-	return jwt.sign({ id }, process.env.JWT_SECRET, {
-		expiresIn: process.env.JWT_EXPIRES_IN,
-	});
-};
 const createSendToken = (user: User, statusCode: number, req: Request, res: Response) => {
 	const token = signToken(user._id);
-
+	const refreshToken = generateRefreshToken();
+	user.refreshToken = refreshToken;
 	res.cookie('jwt', token, {
 		expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
 		httpOnly: true,
 		secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
 	});
 
+  res.cookie('refreshToken', refreshToken, {
+    expires: new Date(Date.now() + process.env.REFRESH_TOKEN_EXPIRES_IN * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    secure: req.secure || req.headers['x-forwarded-proto'] === 'https',
+  });
 	// Remove password from output
 	delete user.password;
 
@@ -151,4 +146,46 @@ export const forgotPassword: RequestHandler = catchAsync(async (req, res, next) 
 
 		return next(new AppError('There was an error sending the email. Try again later!', 500));
 	}
+});
+
+export const resetPassword = catchAsync(async (req, res, next) => {
+	
+	const hashedToken = CryptoJS.SHA256(req.params.token).toString();
+
+	const user = await User.findOne({
+		passwordResetToken: hashedToken,
+		passwordResetExpires: { $gt: Date.now() },
+	});
+
+	
+	if (!user) {
+		return next(new AppError('Token is invalid or has expired', 400));
+	}
+	user.password = req.body.password;
+	user.passwordConfirm = req.body.passwordConfirm;
+	delete user.passwordResetToken;
+	delete user.passwordResetExpires;
+	await user.save();
+
+	createSendToken(user, 200, req, res);
+});
+
+export const refreshAccessToken = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+	const { refreshToken } = req.body;
+	if (!refreshToken && !req.cookies.refreshToken) {
+		return next(new AppError('Refresh token is missing.', 400));
+	}
+
+	const user = await User.findOne(refreshToken ? { refreshToken } : {refreshToken: req.cookies.refreshToken});
+
+	if (!user) {
+		return next(new AppError('Invalid refresh token.', 401));
+	}
+
+	const token = signToken(user._id);
+
+	res.status(200).json({
+		status: 'success',
+		token,
+	});
 });
