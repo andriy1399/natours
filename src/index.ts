@@ -10,6 +10,8 @@ import AppError from './utilities/AppError';
 import errorController from './controllers/errorController';
 import mongoSanitize from 'express-mongo-sanitize';
 import userRouter from './routes/userRouter';
+import tourRouter from './routes/tourRoutes';
+import reviewRouter from './routes/reviewRoute';
 const app = express();
 
 app.use(cookieParser());
@@ -89,6 +91,8 @@ app.use((req, res, next) => {
 
 
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
