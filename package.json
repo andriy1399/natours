@@ -9,8 +9,8 @@
     "start": "node dist/index.js",
     "preserve": "npm run build",
     "serve": "concurrently \"npx tsc -w\"  \"gulp && nodemon dist/server.js\"",
-    "import-to-db": "node ./dev-data/data/import-dev-data.js --import",
-    "delete-from-db": "node ./dev-data/data/import-dev-data.js --delete"
+    "import-to-db": "node dist/import-dev-data.js --import",
+    "delete-from-db": "node dist/import-dev-data.js --delete"
   },
   "repository": {
     "type": "git",
