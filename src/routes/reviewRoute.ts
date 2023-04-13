@@ -10,10 +10,10 @@ import {
 } from '../controllers/reviewController';
 
 const router = express.Router({ mergeParams: true });
-
+router.route('/').get(getAllReviews)
 router.use(protect);
 
-router.route('/').get(getAllReviews).post(restrictTo('user'), setTourUserIds, createReview);
+router.route('/').post(restrictTo('user'), setTourUserIds, createReview);
 
 router
 	.route('/:id')

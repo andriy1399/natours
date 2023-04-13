@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-
+import CryptoJS from 'crypto-js';
 export const signToken = (id: string): string => {
 	return jwt.sign({ id }, process.env.JWT_SECRET, {
 		expiresIn: process.env.JWT_EXPIRES_IN,

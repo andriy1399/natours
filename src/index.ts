@@ -21,7 +21,7 @@ app.set('email-templates', path.join(__dirname, 'email-templates'));
 
 // 1) GLOBAL MIDDLEWARES
 // // Implement CORS
-// app.use(cors());
+app.use(cors());
 // // Access-Control-Allow-Origin *
 // // api.natours.com, front-end natours.com
 // app.use(cors({
@@ -35,7 +35,11 @@ app.set('email-templates', path.join(__dirname, 'email-templates'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Set security HTTP headers
-app.use(helmet());
+app.use(
+    helmet({
+        crossOriginResourcePolicy: false,
+    })
+)
 
 // Development logging
 if (process.env.NODE_ENV === 'development') {
@@ -44,7 +48,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // Limit requests from same API
 const limiter = rateLimit({
-	max: 100,
+	max: 1000,
 	windowMs: 60 * 60 * 1000,
 	message: 'Too many requests from this IP, please try again in an hour!',
 });
@@ -93,7 +97,7 @@ app.use((req, res, next) => {
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/reviews', reviewRouter);
-
+app.use('/api/v1/img', express.static(path.join(`${__dirname}/../, 'dev-data/img'`)));
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
